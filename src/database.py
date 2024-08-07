@@ -26,8 +26,13 @@ Reserved_keywords = set([
 
 class Database:
     def __init__(self, db_name):
+        self.name = db_name
         self.conn = sqlite3.connect(db_name)
         self.cursor = self.conn.cursor()
+
+    @property
+    def _get_name(self):
+        return self.name
 
     def create_table(self, table_name : str, columns : list):
         '''
@@ -62,7 +67,7 @@ class Database:
         '''
         self.conn.close()
         self.cursor.close()
-        print("数据库连接已关闭")
+        # Logger.info("数据库连接已关闭")
 
     def select_data(self, table_name : str, condition : str = None):
         '''
@@ -72,6 +77,20 @@ class Database:
         :return: 查询结果
         '''
         query = f"SELECT * FROM {table_name}"
+        if condition:
+            query += f" WHERE {condition}"
+        self.cursor.execute(query)
+        return self.cursor.fetchall()
+    
+    def select_data_by_name(self, table_name : str, column_name : str ,condition : str = None):
+        '''
+        查询数据
+        :param table_name: 表名
+        :param column_name: 列名
+        :param condition: 条件
+        :return: 查询结果
+        '''
+        query = f"SELECT {column_name} FROM {table_name}"
         if condition:
             query += f" WHERE {condition}"
         self.cursor.execute(query)
@@ -90,6 +109,8 @@ class Database:
         query = f"UPDATE {table_name} SET {set_str} WHERE {condition}"
         self.cursor.execute(query)
         self.conn.commit()
+
+    # def update_data_by_name(self, table_name : str, column_name : str, data : str, condition : str):
 
     def delete_data(self, table_name : str, condition : str):
         '''
