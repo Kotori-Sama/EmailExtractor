@@ -101,15 +101,6 @@ def get_html_by_url(url : str):
     # db.close()
     return url
 
-def worker_with_timeout(url, queue):
-
-    try:
-        result = get_html_by_url(url)
-        queue.put(result)
-    except Exception as e:
-        queue.put(None)
-
-    return
 
 def get_html_from_db(db : Database, table_name : str):
     '''
@@ -144,35 +135,6 @@ def get_html_from_db(db : Database, table_name : str):
             Logger.info(f"更新数据库成功，url: {url}")
             success += 1
             pbar.update()
-
-    # results = []
-    # with tqdm(total=length,desc="获取HTML数据") as pbar:
-    #     for url in urls:
-    #         url = url[0]
-    #         result = pool.apply_async(get_html_by_url, args=(url,))
-    #         results.append((result, url))
-    #         pbar.update()
-
-    #     # 等待所有结果  
-
-    #     for result, url in results:
-    #         try:
-    #             html_content = result.get(timeout=10)  # 设置超时时间为10秒
-    #         except multiprocessing.TimeoutError:
-    #             Logger.error(f"获取HTML数据超时，url: {url}")
-    #             continue
-    #         if not html_content:
-    #             continue
-            
-    #         # 更新数据库
-    #         try:
-    #             db.update_data(table_name, {'html': f"./html/{url}.html"}, condition=f"url = '{url}'")
-    #         except Exception as e:
-    #             Logger.error(f"更新数据库失败，错误信息: {e}")
-    #             # 致命错误
-    #             exit(1) 
-            
-    # results = pool.starmap(updata_db_by_url, [(url[0], db._get_name ,table_name) for url in urls])
 
     pool.close()
     pool.join()

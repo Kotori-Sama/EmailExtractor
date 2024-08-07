@@ -10,6 +10,7 @@ class Constant:
     EMPTY = ''
     HTTP_HEAD = 'http://'
     HTTPS_HEAD = 'https://'
+    TIME_OUT = 10
 
 class Spider:
     def __init__(self, url : str, proxy : dict = None):
@@ -26,7 +27,7 @@ class Spider:
     def get_html(self):
         try: 
             Logger.info(f"正在访问: {self.url}")
-            response = requests.get(self.url, proxies = self.proxy)
+            response = requests.get(self.url, proxies = self.proxy,timeout = Constant.TIME_OUT)
             response.raise_for_status() # 如果状态码不是200，则抛出异常
 
         except requests.exceptions.ConnectionError as e:
@@ -38,7 +39,6 @@ class Spider:
             # print(f"请求错误: {e}")
             Logger.error(f"请求错误: {e}")
             return Constant.EMPTY
-        
         return response.text
     
     def get_html_and_save(self, file_name : str):
