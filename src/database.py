@@ -3,6 +3,9 @@ from datetime import datetime
 import pandas as pd
 import logging
 import re
+
+from src.config import Config
+
 Logger = logging.getLogger("logger_all")
 
 
@@ -66,7 +69,7 @@ class Database:
         :return: None
         '''
         self.conn.close()
-        self.cursor.close()
+        # self.cursor.close()
         # Logger.info("数据库连接已关闭")
 
     def select_data(self, table_name : str, condition : str = None):
@@ -93,6 +96,7 @@ class Database:
         query = f"SELECT {column_name} FROM {table_name}"
         if condition:
             query += f" WHERE {condition}"
+        # print(query)
         self.cursor.execute(query)
         return self.cursor.fetchall()
     
@@ -107,6 +111,7 @@ class Database:
         set_str = ', '.join([f"{k} = '{v}'" for k, v in data.items(
         )])  # 将字典的键值对转换为字符串
         query = f"UPDATE {table_name} SET {set_str} WHERE {condition}"
+        # print(query)
         self.cursor.execute(query)
         self.conn.commit()
 
@@ -186,8 +191,8 @@ class Database:
             table_name = f"{table_name}_{len(self.select_data('sqlite_master'))}"
             Logger.info(f"新表名为{table_name}")
 
-        columns = ['id INTEGER PRIMARY KEY', 'url TEXT NOT NULL', 'email_1 TEXT', 'email_2 TEXT', 'last_access_time TEXT', 'html TEXT']
-        self.create_table(table_name, columns)
+        # Config.COLUMNS = ['id INTEGER PRIMARY KEY', 'url TEXT NOT NULL', 'email_1 TEXT', 'email_2 TEXT', 'last_access_time TEXT', 'html TEXT','emails TEXT']
+        self.create_table(table_name, Config.COLUMNS)
 
         # 遍历每个sheet
         for sheet_name in excel_data.sheet_names:
@@ -199,18 +204,20 @@ class Database:
             for row in data:
 
                  # 修正数据格式
-                for i in range(5):
+                for i in range(len(Config.COLUMNS)-1):
                     if i < len(row) and pd.isna(row[i]):
                         row[i] = ''
                     else:
                         row.append('')
 
                 # 构造插入数据
-                insert_data = dict(zip(['url','email_1','email_2','last_access_time','html'], row))
+                insert_data = dict(zip([col.split(' ')[0] for col in Config.COLUMNS[1:]], row))
 
                 self.insert_data(table_name, insert_data)
         
         Logger.info(f"数据库初始化完成，表名为{table_name}")
+
+        return table_name
 
     
 if __name__ == '__main__':
