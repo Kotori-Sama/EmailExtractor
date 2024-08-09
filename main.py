@@ -4,12 +4,14 @@ import flet as ft
 from datetime import datetime
 from tqdm import tqdm
 import multiprocessing
-from multiprocessing import Process, Queue
+
 
 from src.database import Database
 from src.spider import Spider
 from src.config import Config
 import logging
+
+Config = Config()
 
 def main(page: ft.Page):
     page.title = "Flet counter example"
@@ -61,8 +63,6 @@ def setup_logging():
 
 Logger = setup_logging()
 
-def schema_check(html : str):
-    pass
 
 def _get_html(url : str):
     '''
@@ -88,10 +88,10 @@ def _get_html(url : str):
         Logger.info(f" [{process.name}] 获取HTML数据为空，url: {url}")
         return None
     
-    # # TODO 判断HTML是否符合需求主题
-    # if not schema_check(html):
-    #     Logger.info(f" [{process.name}] 网站内容不符合需求主题，url: {url}")
-    #     return None
+    # 判断HTML是否符合需求主题
+    if not spider.check_schema(html):
+        Logger.info(f" [{process.name}] 网站内容不符合需求主题，url: {url}")
+        return None
     
     # 保存到html文件
     with open(f'./html/{url}.html', 'w', encoding='utf-8') as f:
@@ -215,9 +215,9 @@ def get_email_from_db(db : Database, table_name : str):
 if __name__ == "__main__":
     
     db = Database(Config.DATABASE_PATH)
-    #table_name = db.init_from_excel(excel_file="./example/test.xlsx")
-    #get_html_from_db(db,table_name=table_name)
+    table_name = db.init_from_excel(excel_file="./example/test.xlsx")
+    get_html_from_db(db,table_name=table_name)
     Logger.info("#"*50)
     Logger.info("#"*10+"获取HTML数据完成"+ "#"*10)
     Logger.info("#"*50)
-    get_email_from_db(db,table_name='test')
+    get_email_from_db(db,table_name=table_name)

@@ -8,6 +8,7 @@ from src.config import Config
 
 Logger = logging.getLogger("logger_all")
 
+Config = Config()
 
 # SQLite保留关键字列表
 Reserved_keywords = set([

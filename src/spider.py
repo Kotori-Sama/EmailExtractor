@@ -7,6 +7,7 @@ from urllib.parse import urlparse
 
 from src.config import Config
 # from config import Config
+Config = Config()
 
 Logger = logging.getLogger("logger_all")
 
@@ -188,15 +189,40 @@ class Spider:
 
         return email_list
 
+    def check_schema(self,html : str):
+        '''
+        检查网站内容是否符合主题需求
+        :param html: 网站内容
+        :return: 是否符合主题需求
+        '''
+
+        if not html:
+            Logger.info("[check_schema] HTML为空，正在获取主页的HTML")
+            try:
+                html = self.get_html()
+            except Exception as e:
+                Logger.error(f"[check_schema] 获取主页的HTML失败: {e}")
+                return False
+
+        soup = BeautifulSoup(html, 'html.parser')
+
+        # 根据关键词判断是否符合主题需求
+        all_text = soup.get_text()
+        for keyword in Config.SCHEMA_KEYWORDS:
+            if keyword.lower() in all_text.lower():
+                Logger.info(f"网站内容包含关键词: {keyword}")
+                return True
+        
+        return False
 
 
 
 if __name__ == '__main__':
-    url = 'www.francaise-de-gastronomie.fr'
+    url = 'www.scrabsterseafoods.co.uk'
 
     spider = Spider(url, Config.PROXIES)
-    #html= spider.get_html()
-    #print(html[:500])
+    html= spider.get_html()
+    print(html[:500])
     # spider._valid()
     # print(f"主页的url: {spider.url}")
 
