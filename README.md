@@ -1,1 +1,1 @@
-# This project is developed based on Flet and is intended to serve individuals or groups internally. It can automatically crawl and analyze the web page information and contact information of international companies.
+This project is developed based on Flet and is intended to serve individuals or groups internally. It can automatically crawl and analyze the web page information and contact information of international companies.
