@@ -11,30 +11,7 @@ import logging
 
 Config = Config()
 
-def setup_logging():
-    # 设置sys.stdout和sys.stderr的编码为UTF-8
-    sys.stdout.reconfigure(encoding='utf-8')
-    sys.stderr.reconfigure(encoding='utf-8')
-
-    logger = logging.getLogger('logger_all')
-    logger.setLevel(logging.DEBUG)
-
-    # 创建一个handler，用于写入日志文件和控制台
-    fh = logging.FileHandler(f'./logs/{Config.TODAY}.log',encoding='utf-8')
-    fh.setLevel(logging.DEBUG)
-    ch = logging.StreamHandler()
-    ch.setLevel(logging.DEBUG)
-
-    formatter = logging.Formatter('[%(levelname)s]\t%(asctime)s - %(message)s',datefmt='%H:%M:%S')
-    fh.setFormatter(formatter)
-    ch.setFormatter(formatter)
-
-    logger.addHandler(fh)
-    logger.addHandler(ch)
-
-    return logger
-
-Logger = setup_logging()
+Logger = logging.getLogger("logger_all")
 
 
 def _get_html(url : str):
@@ -67,9 +44,9 @@ def _get_html(url : str):
         return None
     
     # 保存到html文件
-    with open(f'./html/{url}.html', 'w', encoding='utf-8') as f:
+    with open(f'{Config.CACHE_PATH}{url}.html', 'w', encoding='utf-8') as f:
         f.write(html)
-    Logger.info(f" [{process.name}] 保存HTML数据成功，url: {url}，文件路径: ./html/{url}.html")
+    Logger.info(f" [{process.name}] 保存HTML数据成功，url: {url}，文件路径: {Config.CACHE_PATH}{url}.html")
     
     # db.close()
     return url
@@ -100,7 +77,7 @@ def get_html_from_db(db : Database, table_name : str):
 
             # 更新数据库
             try:
-                db.update_data(table_name, {'html': f"./html/{url}.html",'last_access_time': Config.CURRENT_TIME}, condition=f"url = '{url}'")
+                db.update_data(table_name, {'html': f"{Config.CACHE_PATH}{url}.html",'last_access_time': Config.CURRENT_TIME}, condition=f"url = '{url}'")
             except Exception as e:
                 Logger.error(f"更新数据库失败，错误信息: {e}")
                 # 致命错误
@@ -231,11 +208,11 @@ if __name__ == "__main__":
     
     db = Database(Config.DATABASE_PATH)
     # table_name = db.init_from_excel(excel_file="./example/test.xlsx")
-    # get_html_from_db(db,table_name=table_name)
+    get_html_from_db(db,table_name="test")
     # Logger.info("#"*50)
     # Logger.info("#"*10+"获取HTML数据完成"+ "#"*10)
     # Logger.info("#"*50)
     # get_email_from_db(db,table_name=table_name)
     # append_emails(db,table_name="test")
     # db.merge_table("test_4","test_5")
-    db.export_to_excel("test_10","./example/test_9.xlsx")
+    # db.export_to_excel("test_10","./example/test_9.xlsx")

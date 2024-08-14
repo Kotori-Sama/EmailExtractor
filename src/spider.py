@@ -218,16 +218,16 @@ class Spider:
 
 
 if __name__ == '__main__':
-    url = 'www.scrabsterseafoods.co.uk'
+    url = 'www.ambitec.cl'
 
     spider = Spider(url, Config.PROXIES)
     html= spider.get_html()
     print(html[:500])
-    # spider._valid()
-    # print(f"主页的url: {spider.url}")
+    # # spider._valid()
+    # # print(f"主页的url: {spider.url}")
 
-    contact_url = spider._redirct(spider.find_contact())
-    print(f"联系方式的url: {contact_url}")
+    # contact_url = spider._redirct(spider.find_contact())
+    # print(f"联系方式的url: {contact_url}")
 
-    email_list = spider.find_email(spider.get_html(contact_url))
-    print(f"邮箱列表: {email_list}")
+    # email_list = spider.find_email(spider.get_html(contact_url))
+    # print(f"邮箱列表: {email_list}")

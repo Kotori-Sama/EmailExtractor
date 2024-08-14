@@ -1,7 +1,8 @@
 {
     "TODAY": "",
     "CURRENT_TIME": "",
-    "CACHE_PATH": "./html/",
+    "CACHE_PATH": "./assets/html/",
+    "LOG_PATH" : "./assets/logs/",
     "HTTP_HEAD": "http://",
     "HTTPS_HEAD": "https://",
     "HTTP_PROXY": "http://127.0.0.1:7890",
@@ -12,7 +13,8 @@
     },
     "EMPTY":"",
     "TIME_OUT": 10,
-    "DATABASE_PATH": "./db/urls.db",
+    "DATABASE_PATH": "./assets/db/urls.db",
+    "DATABASE_PATH_FLORDER" :"./assets/db/",
     "CONTACT_KEYWORDS": [
         "Contact",
         "Contacto",
@@ -86,5 +88,5 @@
         "html TEXT",
         "emails TEXT"
     ],
-    "EXPORT_PATH" : "./export"
+    "EXPORT_PATH" : "./assets/export"
 }

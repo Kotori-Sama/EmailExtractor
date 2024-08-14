@@ -60,7 +60,7 @@ def main(page: ft.Page):
         logger.setLevel(logging.DEBUG)
 
         # 创建一个handler，用于写入日志文件和控制台
-        fh = logging.FileHandler(f'./logs/{Config.TODAY}.log',encoding='utf-8')
+        fh = logging.FileHandler(f'{Config.LOG_PATH}{Config.TODAY}.log',encoding='utf-8')
         fh.setLevel(logging.DEBUG)
         ch = logging.StreamHandler()
         ch.setLevel(logging.DEBUG)

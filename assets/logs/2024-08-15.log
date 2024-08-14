@@ -1,0 +1,11 @@
+[INFO]	00:13:56 - 成功读取excel文件D:\Learn\project\jsj_project_flet\example\test.xlsx
+[INFO]	00:13:57 - 数据库初始化完成，表名为test
+[INFO]	00:13:57 - 开始后处理，将已经人工添加的email添加到数据库中
+[INFO]	00:13:57 - 共 27 条数据
+[INFO]	00:13:57 - 后处理完成，成功处理 27 条数据
+[INFO]	00:14:14 - 开始获取表 test 中url的HTML数据
+[INFO]	00:14:14 - 共 300 条数据
+[INFO]	00:14:17 - 更新数据库成功，url: www.amehasle.com
+[INFO]	00:14:17 - 更新数据库成功，url: www.akmarine.org
+[INFO]	00:14:20 - 更新数据库成功，url: www.catfish.com
+[INFO]	00:14:21 - 更新数据库成功，url: www.aaei.org

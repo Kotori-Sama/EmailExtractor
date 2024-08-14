@@ -15,7 +15,7 @@ class Config:
     def load_config(self):
         
         try :
-            with open('./src/config.json', 'r', encoding='utf-8') as file:
+            with open('./assets/config.json', 'r', encoding='utf-8') as file:
                 config_data = json.load(file)
                 for key, value in config_data.items():
                     setattr(self, key, value)
@@ -29,5 +29,13 @@ class Config:
         self.CURRENT_TIME = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         self.IMAGE_TYPE = tuple(self.IMAGE_TYPE)
 
-        # if not os.path.exists(self.CACHE_PATH):
-        #     os.makedirs(self.CACHE_PATH)
+        if not os.path.exists(self.CACHE_PATH):
+            os.makedirs(self.CACHE_PATH)
+        if not os.path.exists(self.LOG_PATH):
+            os.makedirs(self.LOG_PATH)
+        if not os.path.exists(self.DATABASE_PATH_FLORDER):
+            os.makedirs(self.DATABASE_PATH_FLORDER)
+        if not os.path.exists(self.EXPORT_PATH):
+            os.makedirs(self.EXPORT_PATH)
+
+
