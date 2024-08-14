@@ -85,5 +85,6 @@
         "last_access_time TEXT",
         "html TEXT",
         "emails TEXT"
-    ]
+    ],
+    "EXPORT_PATH" : "./export"
 }

@@ -46,10 +46,31 @@ class Database:
         :return: None
         '''
         delete_query = f"DROP TABLE IF EXISTS {table_name}"
+        # print(delete_query)
         self.cursor.execute(delete_query)
         query = f"CREATE TABLE IF NOT EXISTS {table_name} ({', '.join(columns)})"
         self.cursor.execute(query)
         self.conn.commit()
+
+    def get_columns(self, table_name : str):
+        '''
+        获取表的所有列名
+        :param table_name: 表名
+        :return: 列名列表
+        '''
+        query = f"PRAGMA table_info({table_name})"
+        self.cursor.execute(query)
+        return [row[1] for row in self.cursor.fetchall()]
+
+    def get_tables(self):
+        '''
+        获取所有表名
+        :return: 表名列表
+        '''
+        query = "SELECT name FROM sqlite_master WHERE type='table'"
+        self.cursor.execute(query)
+        return [row[0] for row in self.cursor.fetchall()]
+    
 
     def insert_data(self, table_name : str, data : dict):
         '''
@@ -182,7 +203,7 @@ class Database:
             # print(f"Error: {e}")
             Logger.error(f"Error: {e}")
             return
-        
+        excel_file = excel_file.replace('\\', '/')
         # 创建表
         table_name = validate_name(excel_file.split('/')[-1].split('.')[0])
 
@@ -220,7 +241,55 @@ class Database:
 
         return table_name
 
+    def merge_table(self, table_name : str, temp_table_name : str):
+        '''
+        合并两个表
+        :param table_name: 目标表名
+        :param temp_table_name: 临时表名
+        :return: None
+        '''
+        # cols = self.get_columns(table_name)[1:]
+        max_id = self.select_data_by_name(table_name,"MAX(id)")[0][0]
+        temp_data = self.select_data(temp_table_name)
+        for row in temp_data:
+            insert_data = dict(zip([col.split(' ')[0] for col in Config.COLUMNS[1:]], row[1:]))
+            self.insert_data(table_name, insert_data)
     
+    def delete_table(self, table_name : str):
+        '''
+        删除表
+        :param table_name: 表名
+        :return: None
+        '''
+        query = f"DROP TABLE IF EXISTS {table_name}"
+        self.cursor.execute(query)
+        self.conn.commit()
+
+    def add_from_excel(self, excel_file : str, table_name : str):
+        '''
+        从excel文件中添加数据到数据库
+        :param excel_file: excel文件路径
+        :param table_name: 表名
+        :return: None
+        '''
+        temp_table_name = self.init_from_excel(excel_file)
+        Logger.info(f"从excel文件{excel_file}中添加数据到数据库{table_name}")
+        self.merge_table(table_name, temp_table_name)
+        self.delete_table(temp_table_name)
+        
+    def export_to_excel(self, table_name : str, excel_file : str):
+        '''
+        导出数据库到excel文件
+        :param table_name: 表名
+        :param excel_file: excel文件路径
+        :return: None
+        '''
+        data = self.select_data(table_name)
+
+        df = pd.DataFrame([row[1:] for row in data], columns=[col.split(' ')[0] for col in Config.COLUMNS[1:]])
+        
+        df.to_excel(excel_file, index=False)
+
 if __name__ == '__main__':
     db = Database('../db/urls.db')
     db.init_from_excel(excel_file="../example/test.xlsx")

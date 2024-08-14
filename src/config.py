@@ -29,5 +29,5 @@ class Config:
         self.CURRENT_TIME = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         self.IMAGE_TYPE = tuple(self.IMAGE_TYPE)
 
-        if not os.path.exists(self.CACHE_PATH):
-            os.makedirs(self.CACHE_PATH)
+        # if not os.path.exists(self.CACHE_PATH):
+        #     os.makedirs(self.CACHE_PATH)

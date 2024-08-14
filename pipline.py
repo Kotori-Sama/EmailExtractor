@@ -1,6 +1,4 @@
 import sys
-import time
-import flet as ft
 from datetime import datetime
 from tqdm import tqdm
 import multiprocessing
@@ -185,15 +183,59 @@ def get_email_from_db(db : Database, table_name : str):
 
     Logger.info(f"获取email数据完成，成功获取 {success} 条数据")
 
+def append_emails(db : Database, table_name : str):
+    '''
+    后处理，将已经人工添加的email添加到数据库中
+    :param db: 数据库对象
+    :param table_name: 表名
+    '''
+    Logger.info(f"开始后处理，将已经人工添加的email添加到数据库中")
 
+    # 找到email_1或email_2不为空的url
+    datas = db.select_data_by_name(table_name, 'url,email_1,email_2,emails',condition = f"email_1 != \'{Config.EMPTY}\' or email_2 != \'{Config.EMPTY}\'")
+    # urls = db.select_data_by_name(table_name, 'url',condition = f"email_1 != \'{Config.EMPTY}\'")
+    length = len(datas)
+    Logger.info(f"共 {length} 条数据")
+
+    success = 0
+    for data in datas:
+        url = data[0]
+        email_1 = data[1]
+        email_2 = data[2]
+        emails = data[3]
+        # 更新数据库
+        try:
+            if emails == Config.EMPTY:
+                email_set = set()
+            else:
+                email_set = set(emails.split(","))
+            if email_1 != Config.EMPTY:
+                email_set.add(email_1)
+            if email_2 != Config.EMPTY:
+                email_set.add(email_2)
+            db.update_data(table_name, {'emails': ",".join(email_set)}, condition=f"url = \'{url}\'")
+            # db.update_data(table_name, {'emails': f"{emails},{email_1},{email_2}"}, condition=f"url = \'{url}\'")
+        except Exception as e:
+            Logger.error(f"更新数据库失败，错误信息: {e}")
+            Logger.error("################致命错误，程序退出################")
+            # 致命错误
+            exit(1)
+
+        # Logger.info(f"后处理成功，url: {url}")
+        success += 1
+
+    Logger.info(f"后处理完成，成功处理 {success} 条数据")
 
 
 if __name__ == "__main__":
     
     db = Database(Config.DATABASE_PATH)
-    table_name = db.init_from_excel(excel_file="./example/test.xlsx")
-    get_html_from_db(db,table_name=table_name)
-    Logger.info("#"*50)
-    Logger.info("#"*10+"获取HTML数据完成"+ "#"*10)
-    Logger.info("#"*50)
-    get_email_from_db(db,table_name=table_name)
+    # table_name = db.init_from_excel(excel_file="./example/test.xlsx")
+    # get_html_from_db(db,table_name=table_name)
+    # Logger.info("#"*50)
+    # Logger.info("#"*10+"获取HTML数据完成"+ "#"*10)
+    # Logger.info("#"*50)
+    # get_email_from_db(db,table_name=table_name)
+    # append_emails(db,table_name="test")
+    # db.merge_table("test_4","test_5")
+    db.export_to_excel("test_10","./example/test_9.xlsx")
