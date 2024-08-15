@@ -1,8 +1,10 @@
+import os
 import sys
 from datetime import datetime
 from tqdm import tqdm
 import multiprocessing
-
+import threading
+from concurrent.futures import ThreadPoolExecutor
 
 from src.database import Database
 from src.spider import Spider
@@ -21,8 +23,8 @@ def _get_html(url : str):
     :return: url
     '''
     # db = Database(db_name) # 每个进程独立的数据库连接
-    process = multiprocessing.current_process()
-    Logger.info(f"子进程 {process.name} 开始执行，url: {url}")
+    # process = multiprocessing.current_process()
+    # Logger.info(f"子进程 {process.name} 开始执行，url: {url}")
 
     # 获取HTML数据
     spider = Spider(url, proxy=Config.PROXIES)
@@ -30,25 +32,26 @@ def _get_html(url : str):
     try:
         html = spider.get_html()
     except Exception as e:
-        Logger.error(f" [{process.name}] 获取HTML数据失败，url: {url}")
+        # Logger.error(f" [{process.name}] 获取HTML数据失败，url: {url}")
         # db.close()
         return None
     
     if not html:
-        Logger.info(f" [{process.name}] 获取HTML数据为空，url: {url}")
+        # Logger.info(f" [{process.name}] 获取HTML数据为空，url: {url}")
         return None
     
     # 判断HTML是否符合需求主题
     if not spider.check_schema(html):
-        Logger.info(f" [{process.name}] 网站内容不符合需求主题，url: {url}")
+        # Logger.info(f" [{process.name}] 网站内容不符合需求主题，url: {url}")
         return None
     
     # 保存到html文件
     with open(f'{Config.CACHE_PATH}{url}.html', 'w', encoding='utf-8') as f:
         f.write(html)
-    Logger.info(f" [{process.name}] 保存HTML数据成功，url: {url}，文件路径: {Config.CACHE_PATH}{url}.html")
+    # Logger.info(f" [{process.name}] 保存HTML数据成功，url: {url}，文件路径: {Config.CACHE_PATH}{url}.html")
     
     # db.close()
+    
     return url
 
 
@@ -67,28 +70,51 @@ def get_html_from_db(db : Database, table_name : str):
 
     success = 0
     # 使用多进程获取HTML数据
-    pool = multiprocessing.Pool(processes=multiprocessing.cpu_count())
+    # multiprocessing.freeze_support()
+    # pool = multiprocessing.Pool(processes=multiprocessing.cpu_count())
    
-    with tqdm(total=length,desc="获取HTML数据") as pbar:
-        for url in pool.imap_unordered(_get_html, [url[0] for url in urls]):
-            if not url:
+    # with tqdm(total=length,desc="获取HTML数据") as pbar:
+    #     for url in pool.imap_unordered(_get_html, [url[0] for url in urls]):
+    #         if not url:
+    #             pbar.update()
+    #             continue
+
+    #         # 更新数据库
+    #         try:
+    #             db.update_data(table_name, {'html': f"{Config.CACHE_PATH}{url}.html",'last_access_time': Config.CURRENT_TIME}, condition=f"url = '{url}'")
+    #         except Exception as e:
+    #             Logger.error(f"更新数据库失败，错误信息: {e}")
+    #             # 致命错误
+    #             exit(1)
+
+    #         Logger.info(f"更新数据库成功，url: {url}")
+    #         success += 1
+    #         pbar.update()
+
+    # pool.close()
+    # pool.join()
+
+    # 使用线程池获取HTML数据
+    with ThreadPoolExecutor(max_workers=os.cpu_count()*4) as executor:
+        with tqdm(total=length, desc="获取HTML数据") as pbar:
+            futures = [executor.submit(_get_html, url[0]) for url in urls]
+            for future in futures:
+                url = future.result()
+                if not url:
+                    pbar.update()
+                    continue
+
+                # 更新数据库
+                try:
+                    db.update_data(table_name, {'html': f"{Config.CACHE_PATH}{url}.html",'last_access_time': Config.CURRENT_TIME}, condition=f"url = '{url}'")
+                except Exception as e:
+                    Logger.error(f"更新数据库失败，错误信息: {e}")
+                    # 致命错误
+                    exit(1)
+
+                Logger.info(f"更新数据库成功，url: {url}")
+                success += 1
                 pbar.update()
-                continue
-
-            # 更新数据库
-            try:
-                db.update_data(table_name, {'html': f"{Config.CACHE_PATH}{url}.html",'last_access_time': Config.CURRENT_TIME}, condition=f"url = '{url}'")
-            except Exception as e:
-                Logger.error(f"更新数据库失败，错误信息: {e}")
-                # 致命错误
-                exit(1)
-
-            Logger.info(f"更新数据库成功，url: {url}")
-            success += 1
-            pbar.update()
-
-    pool.close()
-    pool.join()
 
     Logger.info(f"获取HTML数据完成，成功获取 {success} 条数据")
 
@@ -100,8 +126,8 @@ def _get_email(url : str):
     :param url: url
     :return: email
     '''
-    process = multiprocessing.current_process()
-    Logger.info(f"子进程 {process.name} 开始执行，url: {url}")
+    # process = multiprocessing.current_process()
+    # Logger.info(f"子进程 {process.name} 开始执行，url: {url}")
 
     spider = Spider(url, proxy=Config.PROXIES)
     # 使用缓存
@@ -113,7 +139,7 @@ def _get_email(url : str):
     # get_html的鲁棒性造就了这个triky
     email_list = spider.find_email(spider.get_html(contact_url))
 
-    Logger.info(f" [{process.name}] 获取email成功，url: {url}，email: {email_list}")
+    Logger.info(f"获取email成功，url: {url}，email: {email_list}")
 
     return email_list,url
 
@@ -133,30 +159,54 @@ def get_email_from_db(db : Database, table_name : str):
 
     success = 0
     # 使用多进程获取HTML数据
-    pool = multiprocessing.Pool(processes=multiprocessing.cpu_count())
+    # pool = multiprocessing.Pool(processes=multiprocessing.cpu_count())
 
-    with tqdm(total=length,desc="获取email数据") as pbar:
-        for email_list, url in pool.imap_unordered(_get_email, [url[0] for url in urls]):
+    # with tqdm(total=length,desc="获取email数据") as pbar:
+    #     for email_list, url in pool.imap_unordered(_get_email, [url[0] for url in urls]):
             
-            if len(email_list) == 0:
+    #         if len(email_list) == 0:
+    #             pbar.update()
+    #             continue
+
+    #         # 更新数据库
+    #         try:
+    #             db.update_data(table_name, {'emails': ",".join(email_list)}, condition=f"url = \'{url}\'")
+    #         except Exception as e:
+    #             Logger.error(f"更新数据库失败，错误信息: {e}")
+    #             Logger.error("################致命错误，程序退出################")
+    #             # 致命错误
+    #             exit(1)
+
+    #         Logger.info(f"插入Email数据成功，url: {url}")
+    #         success += 1
+    #         pbar.update()
+
+    # pool.close()
+    # pool.join()
+
+    # 使用线程池获取HTML数据
+    with ThreadPoolExecutor(max_workers=os.cpu_count()*4) as executor:
+        with tqdm(total=length, desc="获取email数据") as pbar:
+            futures = [executor.submit(_get_email, url[0]) for url in urls]
+            for future in futures:
+                email_list, url = future.result()
+                if len(email_list) == 0:
+                    pbar.update()
+                    continue
+
+                # 更新数据库
+                try:
+                    db.update_data(table_name, {'emails': ",".join(email_list)}, condition=f"url = \'{url}\'")
+                except Exception as e:
+                    Logger.error(f"更新数据库失败，错误信息: {e}")
+                    Logger.error("################致命错误，程序退出################")
+                    # 致命错误
+                    exit(1)
+
+                Logger.info(f"插入Email数据成功，url: {url}")
+                success += 1
                 pbar.update()
-                continue
 
-            # 更新数据库
-            try:
-                db.update_data(table_name, {'emails': ",".join(email_list)}, condition=f"url = \'{url}\'")
-            except Exception as e:
-                Logger.error(f"更新数据库失败，错误信息: {e}")
-                Logger.error("################致命错误，程序退出################")
-                # 致命错误
-                exit(1)
-
-            Logger.info(f"插入Email数据成功，url: {url}")
-            success += 1
-            pbar.update()
-
-    pool.close()
-    pool.join()
 
     Logger.info(f"获取email数据完成，成功获取 {success} 条数据")
 
@@ -207,6 +257,7 @@ def append_emails(db : Database, table_name : str):
 if __name__ == "__main__":
     
     db = Database(Config.DATABASE_PATH)
+    # print(os.cpu_count())
     # table_name = db.init_from_excel(excel_file="./example/test.xlsx")
     get_html_from_db(db,table_name="test")
     # Logger.info("#"*50)
