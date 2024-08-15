@@ -5,9 +5,9 @@ from typing import Dict
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse
 
-from src.config import Config
+from src.config import AppConfig
 # from config import Config
-Config = Config()
+Config = AppConfig()
 
 Logger = logging.getLogger("logger_all")
 

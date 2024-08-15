@@ -4,11 +4,11 @@ import pandas as pd
 import logging
 import re
 
-from src.config import Config
+from src.config import AppConfig
 
 Logger = logging.getLogger("logger_all")
 
-Config = Config()
+Config = AppConfig()
 
 # SQLite保留关键字列表
 Reserved_keywords = set([
@@ -40,15 +40,16 @@ class Database:
 
     def create_table(self, table_name : str, columns : list):
         '''
-        创建表，如果表已存在则删除
+        创建表，如果表已存在则不创建
         :param table_name: 表名
         :param columns: 列名
         :return: None
         '''
-        delete_query = f"DROP TABLE IF EXISTS {table_name}"
-        # print(delete_query)
-        self.cursor.execute(delete_query)
+        # delete_query = f"DROP TABLE IF EXISTS {table_name}"
+        # # print(delete_query)
+        # self.cursor.execute(delete_query)
         query = f"CREATE TABLE IF NOT EXISTS {table_name} ({', '.join(columns)})"
+        # print(query)
         self.cursor.execute(query)
         self.conn.commit()
 
@@ -262,6 +263,7 @@ class Database:
         :return: None
         '''
         query = f"DROP TABLE IF EXISTS {table_name}"
+        # print(query)
         self.cursor.execute(query)
         self.conn.commit()
 

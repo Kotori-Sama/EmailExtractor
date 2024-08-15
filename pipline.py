@@ -8,10 +8,10 @@ from concurrent.futures import ThreadPoolExecutor
 
 from src.database import Database
 from src.spider import Spider
-from src.config import Config
+from src.config import AppConfig
 import logging
 
-Config = Config()
+Config = AppConfig()
 
 Logger = logging.getLogger("logger_all")
 

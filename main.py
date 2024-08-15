@@ -1,3 +1,4 @@
+import multiprocessing
 import os
 import flet as ft
 import pipline
@@ -21,7 +22,7 @@ class UIHandler(logging.Handler):
 
 
 
-class AppConfig:
+class AppInf:
     Version = "v0.1.0"
     Author = "Wang Yuchao"
     Title = "邮箱提取工具"
@@ -48,7 +49,17 @@ class String():
 
 
 def main(page: ft.Page):
+    # 日志显示窗口要提前设置
     search_log = ft.ListView(spacing=10, padding=20, auto_scroll=True, height=200)
+
+    # 初始化数据库和日志
+    def init_database():
+        db = Database(Config.DATABASE_PATH)
+        tables = db.get_tables()
+        if len(tables) == 0:
+            db.create_table("默认",Config.COLUMNS)
+
+    init_database()
     
 
     def setup_logging():
@@ -108,7 +119,9 @@ def main(page: ft.Page):
         selected_index = e.control.selected_index
         content_column.controls.clear()
         if selected_index == 0:
-            content_column.controls.append(ft.Text("主页"))
+            # content_column.controls.append(ft.Text("主页"))
+            content_column.controls.append(home_image)
+            content_column.controls.append(home_column)
             content_column.alignment =ft.MainAxisAlignment.CENTER,
             Logger.handlers[-1].turned_on = False
         elif selected_index == 1:
@@ -129,13 +142,32 @@ def main(page: ft.Page):
             content_column.controls.append(search_page_bar)
             content_column.controls.append(ft.Divider(height=8,thickness=0, color=ft.colors.TRANSPARENT))
             content_column.controls.append(search_log)
+            content_column.controls.append(search_log_clean_row)
             Logger.handlers[-1].turned_on = True
 
             content_column.alignment = ft.MainAxisAlignment.START
 
             # content_column.controls.append(ft.Text("查找"))
         elif selected_index == 3:
-            content_column.controls.append(ft.Text("设置"))
+            # content_column.controls.append(ft.Text("设置"))
+            
+            content_column.controls.append(ft.Row(
+                [
+                    ft.Row([ft.Text("路径设置",size=20,weight=ft.FontWeight.BOLD),ft.Icon(ft.icons.CACHED)]),
+                    ft.Row(
+                        [
+                            ft.ElevatedButton("保存", on_click=on_settings_save),
+                            ft.ElevatedButton("恢复默认设置", on_click=on_settings_default)
+                        ]
+                    )
+                ],
+                alignment=ft.MainAxisAlignment.SPACE_BETWEEN
+            ))
+            content_column.controls.append(settings_path_card)
+            content_column.controls.append(ft.Row([ft.Text("网络设置",size=20,weight=ft.FontWeight.BOLD),ft.Icon(ft.icons.WIFI)]))
+            content_column.controls.append(settings_network_card)
+            content_column.controls.append(ft.Row([ft.Text("爬虫设置",size=20,weight=ft.FontWeight.BOLD),ft.Icon(ft.icons.MANAGE_SEARCH)]))
+            content_column.controls.append(settings_spider_card)
             content_column.alignment =ft.MainAxisAlignment.CENTER,
             Logger.handlers[-1].turned_on = False
         
@@ -355,6 +387,14 @@ def main(page: ft.Page):
         database_file_export_dialog_file_name.update()
         database_file_export_dialog_file_alert.update()
 
+    def clean_database_table_edit_dialog(e):
+        
+        database_table_edit_dialog_table_name.value = ""
+        database_table_edit_dialog_alert.value = ""
+        database_table_edit_dialog_table_name.update()
+        database_table_edit_dialog_alert.update()
+        # database_table_edit_dialog_delete_button.update()
+
     def on_insert_single_data(e):
         # 如果url输入为空则不执行插入操作
         if not database_file_import_dialog_single_url.value:
@@ -400,7 +440,8 @@ def main(page: ft.Page):
             return
         # print(e.files)
         database_file_import_dialog_file_path_cache.value = e.files[0].path # 缓存文件路径
-        database_file_import_dialog_file_alert.value = f"文件已选择{e.files[0].path}"
+        file_name = e.files[0].path.split("\\")[-1]
+        database_file_import_dialog_file_alert.value = f"文件已选择{file_name}"
         database_file_import_dialog_file_alert.update()
 
     
@@ -422,6 +463,9 @@ def main(page: ft.Page):
         e.control.update()
 
     def on_file_export_dialog_tabs_change(e : ft.ControlEvent):
+        pass
+
+    def on_table_edit_dialog_tabs_change(e : ft.ControlEvent):
         pass
 
     def parse_col_index(col_index):
@@ -480,6 +524,12 @@ def main(page: ft.Page):
         database_edit_dialog_delete_confirm.open = True
         page.update()
 
+    def on_database_table_edit_dialog_delete(e):
+        page.overlay.clear()
+        page.overlay.append(database_table_edit_dialog_delete_confirm)
+        database_table_edit_dialog_delete_confirm.open = True
+        page.update()
+
     def on_yes_database_edit_dialog_delete_confirm(e):
 
         row_index = database_edit_dialog_rowindex_cache.value # 从缓存获取index
@@ -503,6 +553,27 @@ def main(page: ft.Page):
 
         database_edit_dialog_delete_confirm.open = False
         page.update()
+
+    def on_yes_database_table_edit_dialog_delete_confirm(e):
+
+        table_name = database_table_select_dropdown.value
+
+        db = Database(Config.DATABASE_PATH)
+        db.delete_table(table_name)
+        init_database()# 如果把默认表格删除，则需要重新初始化
+        database_table_select_dropdown.options = get_database_tables_options()
+        search_table_select_dropdown.options = get_database_tables_options()
+        database_table_select_dropdown.value = database_table_select_dropdown.options[0].key
+        on_tables_select(None) # 刷新表格
+
+        database_table_edit_dialog_delete_confirm.open = False
+        page.update()
+
+    def on_no_database_table_edit_dialog_delete_confirm(e):
+
+        database_table_edit_dialog_delete_confirm.open = False
+        page.update()
+
     
     def on_file_import_dialog_file_import(e):
         database_file_import_dialog.open = False
@@ -545,10 +616,45 @@ def main(page: ft.Page):
         database_file_export_dialog_file_name.error_text = ""
         database_file_export_dialog_file_name.update()
     
+    def on_database_table_edit_dialog_table_name_change(e):
+        database_table_edit_dialog_table_name.error_text = ""
+        database_table_edit_dialog_table_name.update()
+
+    def on_database_table_edit_dialog_create(e):
+        table_name = database_table_edit_dialog_table_name.value
+        if not table_name:
+            database_table_edit_dialog_table_name.error_text = "表名不可为空"
+            database_table_edit_dialog_table_name.update()
+            return
+        
+        db = Database(Config.DATABASE_PATH)
+        table_names = db.get_tables()
+
+        if table_name in table_names:
+            database_table_edit_dialog_table_name.error_text = "表名已存在"
+            database_table_edit_dialog_table_name.update()
+            return
+        
+        try:
+
+            db.create_table(table_name,Config.COLUMNS)
+
+        except Exception as e:
+            database_table_edit_dialog_table_name.error_text = "表名含有非法字符"
+            database_table_edit_dialog_table_name.update()
+            return
+        
+        database_table_edit_dialog_alert.value = "创建成功"
+        database_table_select_dropdown.options = get_database_tables_options()
+        search_table_select_dropdown.options = get_database_tables_options()
+        page.update()
+
+
+    
     def on_database_file_export_dialog_export(e):
         
         file_name = database_file_export_dialog_file_name.value
-        print(file_name)
+        # print(file_name)
         if not file_name:
             database_file_export_dialog_file_name.error_text = "文件名不可为空"
             database_file_export_dialog_file_name.update()
@@ -566,25 +672,44 @@ def main(page: ft.Page):
         db = Database(Config.DATABASE_PATH)
         if not os.path.exists(Config.EXPORT_PATH):
             os.mkdir(Config.EXPORT_PATH)
-        db.export_to_excel(table_name,f"{Config.EXPORT_PATH}/{file_name}.xlsx")
+        db.export_to_excel(table_name,f"{Config.EXPORT_PATH}{file_name}.xlsx")
 
         
 
     def on_file_export(e):
         page.overlay.clear()
+        database_file_export_dialog_file_name.hint_text = f"保存至{Config.EXPORT_PATH}"
         database_file_export_dialog_file_alert.value = "" # 清除缓存
         
         page.overlay.append(database_file_export_dialog)
         database_file_export_dialog.open = True
         page.update()
 
+    def on_table_edit(e):
+        page.overlay.clear()
+        database_table_edit_dialog_alert.value = "" 
+        database_table_edit_dialog_delete_button.disabled = False if database_table_select_dropdown.value else True
+        database_table_edit_dialog_delete_button.text = f"删除表格：{database_table_select_dropdown.value}" if database_table_select_dropdown.value else "请选择表"
+
+
+        page.overlay.append(database_table_edit_dialog)
+        database_table_edit_dialog.open = True
+
+        page.update()
+
     def disable_all_search_button():
+        left_nav.disabled = True
+        search_log_clean_button.disabled = True
+        search_table_select_dropdown.disabled = True
         search_step_card1_start.disabled = True
         search_step_card2_start.disabled = True
         search_all_in_one_start.disabled = True
         page.update()
 
     def enable_all_search_button():
+        left_nav.disabled = False
+        search_table_select_dropdown.disabled = False
+        search_log_clean_button.disabled = False
         search_step_card1_start.disabled = False
         search_step_card2_start.disabled = False
         search_all_in_one_start.disabled = False
@@ -634,15 +759,168 @@ def main(page: ft.Page):
             search_table_select_dropdown.update()
             return
         disable_all_search_button()
+        search_page_bar.value = None
+        search_page_bar.update()
+
+        db = Database(Config.DATABASE_PATH)
+        pipline.get_html_from_db(db,table_name=table_name)
+        pipline.get_email_from_db(db,table_name=table_name)
+        pipline.append_emails(db,table_name=table_name)
+
+        search_page_bar.value = 1
+        search_page_bar.update()
+        enable_all_search_button()
+
     def on_searche_table_select_change(e):
         search_table_select_dropdown.error_text = None
         search_table_select_dropdown.update()
+
+    def on_search_log_clean(e):
+        search_log.controls = []
+        search_log.update()
+
+    def on_settings_spider_theme_click(e):
+        page.overlay.clear()
+        page.overlay.append(settings_spider_theme_dialog)
+        settings_spider_themes.values = [] # 奇妙的bug ：clear不行，只能重新赋值
+        for theme in Config.SCHEMA_KEYWORDS:
+            settings_spider_themes.add(theme)
+        updata_settings_spider_theme_dialog_list_view()
+
+        
+        settings_spider_theme_dialog.open = True
+        page.update()
+
+    def on_settings_spider_contact_click(e):
+        page.overlay.clear()
+        page.overlay.append(settings_spider_contact_dialog)
+        settings_spider_contacts.values = [] # 奇妙的bug ：clear不行，只能重新赋值
+        for contact in Config.CONTACT_KEYWORDS:
+            settings_spider_contacts.add(contact)
+        updata_settings_spider_contact_dialog_list_view()
+
+        settings_spider_contact_dialog.open = True
+        page.update()
+
+    def update_settings_spider_themes(e, index):
+        settings_spider_themes.values[index] = e.control.value
+    
+    def update_settings_spider_contacts(e, index):
+        settings_spider_contacts.values[index] = e.control.value
+
+    def delete_settings_spider_themes(index):
+        settings_spider_themes.values.pop(index)
+        updata_settings_spider_theme_dialog_list_view()
+    
+    def delete_settings_spider_contacts(index):
+        settings_spider_contacts.values.pop(index)
+        updata_settings_spider_contact_dialog_list_view()
+
+    def updata_settings_spider_theme_dialog_list_view():
+        settings_spider_theme_dialog_list_view.controls.clear()
+        for index, item in enumerate(settings_spider_themes.values):
+            settings_spider_theme_dialog_list_view.controls.append(ft.Row([
+                ft.TextField(value=item, expand=1, on_change=lambda e, i=index: update_settings_spider_themes(e, i),
+                            hint_text="主题",height=40),
+                ft.IconButton(icon=ft.icons.DELETE, on_click=lambda e, i=index: delete_settings_spider_themes(i))
+            ]))
+        page.update()
+    
+    def updata_settings_spider_contact_dialog_list_view():
+        settings_spider_contact_dialog_list_view.controls.clear()
+        for index, item in enumerate(settings_spider_contacts.values):
+            settings_spider_contact_dialog_list_view.controls.append(ft.Row([
+                ft.TextField(value=item, expand=1, on_change=lambda e, i=index: update_settings_spider_contacts(e, i),
+                            hint_text="主题",height=40),
+                ft.IconButton(icon=ft.icons.DELETE, on_click=lambda e, i=index: delete_settings_spider_contacts(i))
+            ]))
+        page.update()
+    
+    def on_settings_spider_theme_dialog_add_item(e):
+        if settings_spider_theme_dialog_input_field.value:
+            settings_spider_themes.add(settings_spider_theme_dialog_input_field.value)
+            settings_spider_theme_dialog_input_field.value = ""
+            updata_settings_spider_theme_dialog_list_view()
+    
+    def on_settings_spider_contact_dialog_add_item(e):
+        if settings_spider_contact_dialog_input_field.value:
+            settings_spider_contacts.add(settings_spider_contact_dialog_input_field.value)
+            settings_spider_contact_dialog_input_field.value = ""
+            updata_settings_spider_contact_dialog_list_view()
+
+    def on_yes_settings_spider_theme_dialog(e):
+        clean_settings_spider_themes = [theme.replace(" ", "") for theme in settings_spider_themes.values if theme]
+        Config.SCHEMA_KEYWORDS = [theme for theme in clean_settings_spider_themes if theme]
+        Config.write_config()
+
+
+        settings_spider_theme_dialog.open = False
+        page.update()
+
+    def on_no_settings_spider_theme_dialog(e):
+
+        settings_spider_theme_dialog.open = False
+        page.update()
+
+    def on_yes_settings_spider_contact_dialog(e):
+        clean_settings_spider_contacts = [contact.replace(" ", "") for contact in settings_spider_contacts.values if contact]
+        Config.CONTACT_KEYWORDS = [contact for contact in clean_settings_spider_contacts if contact]
+        Config.write_config()
+
+        settings_spider_contact_dialog.open = False
+        page.update()
+
+    def on_no_settings_spider_contact_dialog(e):
+
+        settings_spider_contact_dialog.open = False
+        page.update()
+
+    def on_settings_save(e):
+        Config.CACHE_PATH = f"./assets/{settings_cache_path.value}/"
+        Config.LOG_PATH = f"./assets/{settings_log_path.value}/"
+        Config.EXPORT_PATH = f"./assets/{settings_export_path.value}/"
+        http_proxy = f"{settings_http_proxy_prefix.value}{settings_http_proxy_ip.value}:{settings_http_proxy_port.value}"
+        https_proxy = f"{settings_https_proxy_prefix.value}{settings_https_proxy_ip.value}:{settings_https_proxy_port.value}"
+        Config.HTTP_PROXY = http_proxy
+        Config.HTTPS_PROXY = https_proxy
+        Config.PROXIES = {"http": http_proxy, "https": https_proxy}
+        Config.TIME_OUT = int(settings_time_out.value)
+        Config.write_config()
+        Config.load_config()
+    
+    def on_settings_default(e):
+        Config.CACHE_PATH = "./assets/html/"
+        Config.LOG_PATH = "./assets/logs/"
+        Config.EXPORT_PATH = "./assets/export/"
+        http_proxy = "http://127.0.0.1:7890"
+        https_proxy = "http://127.0.0.1:7890"
+        Config.HTTP_PROXY = http_proxy
+        Config.HTTPS_PROXY = https_proxy
+        Config.PROXIES = {"http": http_proxy, "https": https_proxy}
+        Config.TIME_OUT = 10
+        Config.write_config()
+        Config.load_config()
+
+        settings_cache_path.value = Config.CACHE_PATH.split("/")[-2]
+        settings_log_path.value = Config.LOG_PATH.split("/")[-2]
+        settings_export_path.value = Config.EXPORT_PATH.split("/")[-2]
+        settings_http_proxy_ip.value = Config.HTTP_PROXY.split(":")[1].split("//")[1]
+        settings_http_proxy_port.value = Config.HTTP_PROXY.split(":")[2]
+        settings_https_proxy_ip.value = Config.HTTPS_PROXY.split(":")[1].split("//")[1]
+        settings_https_proxy_port.value = Config.HTTPS_PROXY.split(":")[2]
+        settings_http_proxy_prefix.value = Config.HTTP_PROXY.split(":")[0] + "://"
+        settings_https_proxy_prefix.value = Config.HTTPS_PROXY.split(":")[0] + "://"
+        settings_time_out.value = str(Config.TIME_OUT)
+        page.update()
+
+    def on_github_click(e):
+        page.launch_url("https://github.com/Kotori-Sama/JSJ-Project")
     ####################################################################################
 
     page.fonts = get_fonts()
     page.theme = ft.Theme(font_family="default")
     page.theme_mode = ft.ThemeMode.LIGHT
-    page.title = AppConfig.Title + " " + AppConfig.Version
+    page.title = AppInf.Title + " " + AppInf.Version
 
     left_nav = ft.NavigationRail(
         # min_width=100,
@@ -802,7 +1080,7 @@ def main(page: ft.Page):
 
     database_file_control_row = ft.Row(
         controls=[
-            
+            ft.ElevatedButton("编辑",on_click=on_table_edit),
             ft.ElevatedButton("导入",on_click=on_file_import),
             ft.ElevatedButton("导出",on_click=on_file_export),
         ],
@@ -1034,6 +1312,63 @@ def main(page: ft.Page):
         on_dismiss=clean_database_file_export_dialog,
     )
 
+
+    database_table_edit_dialog_delete_confirm = ft.AlertDialog(
+        title=ft.Text("是否删除该表格？"),
+        content=ft.Text("该操作不可逆，请谨慎操作"),
+        actions=[
+            ft.TextButton("确定", on_click=on_yes_database_table_edit_dialog_delete_confirm),#on_yes_database_edit_dialog_delete_confirm),
+            ft.TextButton("取消", on_click=on_no_database_table_edit_dialog_delete_confirm)#on_no_database_edit_dialog_delete_confirm),
+        ],
+        actions_alignment=ft.MainAxisAlignment.END,
+    )
+
+    database_table_edit_dialog_delete_button = ft.ElevatedButton(f"删除表格：{database_table_select_dropdown.value}"
+                                          if database_table_select_dropdown.value else "请选择表格"
+                                          ,on_click=on_database_table_edit_dialog_delete,
+                                          disabled=False if database_table_select_dropdown.value else True)
+    database_table_edit_dialog_alert = ft.Text(value="",color="red")
+    database_table_edit_dialog_table_name = ft.TextField(label="表格名",hint_text="请输入表格名",on_change=on_database_table_edit_dialog_table_name_change)
+    database_table_edit_dialog = ft.AlertDialog(
+        title=ft.Text("编辑表格"),
+        content=ft.Tabs(
+            [
+                ft.Tab(
+                    icon=ft.icons.ADD_CARD,
+                    text="新建表格",
+                    content=ft.Column(
+                        controls=[
+                            ft.Column(controls=[database_table_edit_dialog_table_name]),
+                            ft.Row(
+                                controls=[database_table_edit_dialog_alert,
+                                          ft.ElevatedButton("新建",on_click=on_database_table_edit_dialog_create)],
+                                alignment=ft.MainAxisAlignment.SPACE_BETWEEN
+                            )
+                        ],
+                        alignment=ft.MainAxisAlignment.SPACE_EVENLY
+                    )
+                ),
+                ft.Tab(
+                    text="删除表格",
+                    icon=ft.icons.DELETE,
+                    content=ft.Container(
+                        database_table_edit_dialog_delete_button,
+                        alignment=ft.alignment.center,
+                        width=400,
+                        height=200,
+                    )
+                    
+                ),
+            ],
+            selected_index=0,
+            animation_duration=300,
+            width=400,
+            height=200,
+            on_change=on_table_edit_dialog_tabs_change,#on_file_export_dialog_tabs_change,
+        ),
+        on_dismiss=clean_database_table_edit_dialog,
+    )
+
     ##############################################################################################
     """ 查找 """
     search_text_container = ft.Container(content=ft.Text("爬取邮箱",size=20))
@@ -1052,15 +1387,6 @@ def main(page: ft.Page):
         controls=[
             search_table_select_dropdown,
         ]
-    )
-
-    search_file_control_row = ft.Row(
-        controls=[
-            
-            ft.ElevatedButton("导入",on_click=on_file_import),
-            ft.ElevatedButton("导出",on_click=on_file_export),
-        ],
-        alignment=ft.MainAxisAlignment.END
     )
 
     search_control_row = ft.Row(
@@ -1136,6 +1462,272 @@ def main(page: ft.Page):
         vertical_alignment=ft.CrossAxisAlignment.CENTER
     )
 
+    search_log_clean_button = ft.ElevatedButton("清空日志",on_click=on_search_log_clean)
+    search_log_clean_row = ft.Row(
+        controls=[
+            search_log_clean_button,
+        ],
+        alignment=ft.MainAxisAlignment.END,
+    )
+    
+    ################################################################################
+    """ 设置 """
+    settings_cache_path = ft.TextField(label="HTML缓存目录",height=50, border="underline",value=Config.CACHE_PATH.split("/")[-2])
+    # settings_db_path = ft.TextField(label="数据库名称",height=50, border="underline",prefix="./assest/db/",value=Config.DATABASE_PATH,suffix=".db")
+    settings_log_path = ft.TextField(label="日志文件目录", height=50,border="underline",value=Config.LOG_PATH.split("/")[-2])
+    settings_export_path = ft.TextField(label="导出文件目录", height=50,border="underline",value=Config.EXPORT_PATH.split("/")[-2])
+
+    settings_path_card = ft.Card(
+        content=ft.Container(
+            content=ft.Column(
+                [
+                    settings_cache_path,
+                    # settings_db_path,
+                    settings_log_path,
+                    settings_export_path,
+                ],
+                spacing=10,
+                alignment=ft.MainAxisAlignment.CENTER,
+                horizontal_alignment=ft.CrossAxisAlignment.CENTER
+            ),
+            width=1000,
+            padding=10,
+        ),
+        
+    )
+
+    settings_http_proxy_ip = ft.TextField(label="代理IP地址",value="127.0.0.1",width=300,height=40)
+    settings_http_proxy_port = ft.TextField(label="端口",value="7890",width=150,height=40)
+    settings_http_proxy_prefix = ft.RadioGroup(
+                content=ft.Row(
+                    controls=[
+                        ft.Radio(value="http://", label="前缀：http://"),
+                        ft.Radio(value="https://", label="前缀：https://"),
+                    ],
+                ),
+                value=Config.HTTP_PROXY.split("://")[0] + "://",
+            )
+    setting_http_proxy = ft.Row(
+        controls=[
+            ft.Container(
+                ft.Text("HTTP代理:"),
+                alignment=ft.alignment.center
+            ),
+            ft.Row(
+                controls=[
+                    settings_http_proxy_ip,
+                    ft.Text(":"),
+                    settings_http_proxy_port,
+                ]
+            ),
+            settings_http_proxy_prefix
+        ],
+        # alignment=ft.MainAxisAlignment.CENTER,
+    )
+
+    settings_https_proxy_ip = ft.TextField(label="代理IP地址",value="127.0.0.1",width=300,height=40)
+    settings_https_proxy_port = ft.TextField(label="端口",value="7890",width=150,height=40)
+    settings_https_proxy_prefix = ft.RadioGroup(
+                content=ft.Row(
+                    controls=[
+                        ft.Radio(value="http://", label="前缀：http://"),
+                        ft.Radio(value="https://", label="前缀：https://"),
+                    ],
+                ),
+                value=Config.HTTPS_PROXY.split("://")[0] + "://",
+            )
+    setting_https_proxy = ft.Row(
+        controls=[
+            ft.Container(
+                ft.Text("HTTPS代理:"),
+                alignment=ft.alignment.center,
+            ),
+            ft.Row(
+                controls=[
+                    settings_https_proxy_ip,
+                    ft.Text(":"),
+                    settings_https_proxy_port,
+                ]
+            ),
+            settings_https_proxy_prefix
+            
+        ],
+        # alignment=ft.MainAxisAlignment.CENTER,
+    )
+
+    settings_time_out = ft.TextField(label="超时时间(s)",value=Config.TIME_OUT,width=300,height=50,border="underline")
+    settings_network_card = ft.Card(
+        content=ft.Container(
+            content=ft.Column(
+                [
+                    setting_http_proxy,
+                    setting_https_proxy,
+                    settings_time_out
+                ],
+                spacing=15,
+                # alignment=ft.MainAxisAlignment.CENTER,
+                # horizontal_alignment=ft.CrossAxisAlignment.CENTER
+            ),
+            width=1000,
+            padding=10,
+        )
+    )
+
+    settings_spider_theme = ft.ListTile(
+                            leading=ft.Icon(ft.icons.FILTER_ALT_OUTLINED),
+                            title=ft.Text("主题识别的关键词：用于过滤主题无关的页面"),
+                            trailing=ft.OutlinedButton(
+                                "修改",
+                                on_click=on_settings_spider_theme_click
+                            )
+                        )
+    
+    settings_spider_contact = ft.ListTile(
+        leading=ft.Icon(ft.icons.CONTACT_PAGE_OUTLINED),
+        title=ft.Text("联系方式识别的关键词：用于在主页中识别联系方式"),
+        trailing=ft.OutlinedButton(
+            "修改",
+            on_click=on_settings_spider_contact_click
+        )
+    )
+    settings_spider_card = ft.Card(
+        content=ft.Container(
+            content=ft.Column(
+                [
+                    settings_spider_theme,
+                    settings_spider_contact
+                ]
+            )
+        )
+    )
+
+    settings_spider_themes = List(Config.SCHEMA_KEYWORDS)
+    settings_spider_theme_dialog_list_view = ft.Column()
+    settings_spider_theme_dialog_input_field = ft.TextField(hint_text="插入关键词",height=40)
+    settings_spider_theme_dialog_add_button = ft.IconButton(icon=ft.icons.ADD, on_click=on_settings_spider_theme_dialog_add_item)
+    settings_spider_theme_dialog = ft.AlertDialog(
+        title=ft.Text("编辑主题识别关键词"),
+        content=ft.Column(
+            [
+                ft.Row([settings_spider_theme_dialog_input_field, settings_spider_theme_dialog_add_button],alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                # ft.Column([settings_spider_theme_dialog_list_view],scroll=ft.ScrollMode.AUTO)
+                ft.Container(
+                    content=ft.Column(
+                        [settings_spider_theme_dialog_list_view],
+                        scroll=ft.ScrollMode.AUTO
+                    ),
+                    height=420
+                )
+            ],
+            width=400,
+            height=500,
+            spacing=20
+        ),
+        actions=[
+            ft.TextButton("确定", on_click=on_yes_settings_spider_theme_dialog),
+            ft.TextButton("取消", on_click=on_no_settings_spider_theme_dialog)
+        ],
+        actions_alignment=ft.MainAxisAlignment.END,
+        on_dismiss=lambda e: page.update()
+    )
+
+    settings_spider_contacts = List(Config.SCHEMA_KEYWORDS)
+    settings_spider_contact_dialog_list_view = ft.Column()
+    settings_spider_contact_dialog_input_field = ft.TextField(hint_text="插入关键词",height=40)
+    settings_spider_contact_dialog_add_button = ft.IconButton(icon=ft.icons.ADD, on_click=on_settings_spider_contact_dialog_add_item)
+    settings_spider_contact_dialog = ft.AlertDialog(
+        title=ft.Text("编辑联系方式识别关键词"),
+        content=ft.Column(
+            [
+                ft.Row([settings_spider_contact_dialog_input_field, settings_spider_contact_dialog_add_button],alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                # ft.Column([settings_spider_theme_dialog_list_view],scroll=ft.ScrollMode.AUTO)
+                ft.Container(
+                    content=ft.Column(
+                        [settings_spider_contact_dialog_list_view],
+                        scroll=ft.ScrollMode.AUTO
+                    ),
+                    height=420
+                )
+            ],
+            width=400,
+            height=500,
+            spacing=20
+        ),
+        actions=[
+            ft.TextButton("确定", on_click=on_yes_settings_spider_contact_dialog),
+            ft.TextButton("取消", on_click=on_no_settings_spider_contact_dialog)
+        ],
+        actions_alignment=ft.MainAxisAlignment.END,
+        on_dismiss=lambda e: page.update()
+    )
+
+    ################################################################################
+    """ 主页 """
+    home_image = ft.Image(
+        src="logo2.png",
+        fit=ft.ImageFit.CONTAIN,
+        width=500
+    )
+    home_res_card = ft.Card(
+        content=ft.Container(
+            content=ft.Column(
+                [
+                    ft.ListTile(
+                        leading=ft.Icon(ft.icons.WARNING),
+                        title=ft.Text("免责声明", weight=ft.FontWeight.BOLD),
+                        subtitle=ft.Text(
+                            "尊敬的用户：\n   感谢您使用本网络爬虫程序。在使用本程序之前，请仔细阅读以下免责声明：\n"+ \
+                            "   1.我们不对您在使用本爬虫程序时可能遇到的任何问题或风险承担责任。您应自行承担使用本程序的风险和后果。\n"+ \
+                            "   2.本爬虫程序仅供学习、研究或个人使用。未经许可，不得将本程序用于商业目的或其他非法用途。\n"+ \
+                            "   3.在使用本爬虫程序时，您应尊重他人的知识产权和个人隐私，不得侵犯他人合法权益。\n"+ \
+                            "   4.您不得将通过本爬虫程序获取的信息用于未经授权的目的，尤其是不得用于侵犯他人权益或违反法律法规的行为。\n"
+                            "   5.使用该爬虫程序造成的一切后果，应由使用者自行承担。"
+                        ),
+                    ),
+                ]
+            ),
+            width=900,
+            padding=10,
+        )
+    )
+    home_column = ft.Column(
+        [
+            ft.Row(
+                [
+                    ft.Text("如果您喜欢我的项目，请给我一颗星", weight=ft.FontWeight.BOLD),
+                    ft.IconButton(
+                        content=ft.Image(
+                            src="github-mark.svg",
+                            fit=ft.ImageFit.CONTAIN,
+                            width=24,
+                            height=24
+                        ),
+                        on_click=on_github_click
+                    ),
+                ],
+                alignment=ft.MainAxisAlignment.CENTER
+            ),
+            ft.Row([ft.Text("(或者在Issues中报告bug)",style=ft.TextStyle(
+                        decoration=ft.TextDecoration.LINE_THROUGH,
+                        decoration_thickness=1.5,
+                    ),)],alignment=ft.MainAxisAlignment.CENTER),
+            ft.Container(
+                content=ft.Column(
+                    [
+                        ft.Text("欢迎使用EmailExtractor！"),
+                        ft.Text("这是一个用于提取网站中电子邮件地址的软件。我会根据您提供的网站URL，提取出所有可能的电子邮件地址。"),
+                        ft.Text("您可以在设置中自定义您需要过滤的网站主题和搜索联系方式的关键词。"),
+                        ft.Text("另外，我向您提供了一个简单的数据库管理系统，您可以在这里查看和管理您提取到的电子邮件地址。"),
+                    ],
+                ),
+                padding=40
+            ),
+            # ft.Divider(thickness=0,color=ft.colors.TRANSPARENT,height=10),
+            home_res_card
+        ],
+        alignment=ft.MainAxisAlignment.CENTER,
+        horizontal_alignment=ft.CrossAxisAlignment.CENTER
+    )
     
 
     page.add(
@@ -1154,5 +1746,9 @@ def main(page: ft.Page):
         )
     )
 
+    
+    
+
 if __name__ == "__main__":
+    
     ft.app(target=main)

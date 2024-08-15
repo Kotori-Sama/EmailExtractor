@@ -2,13 +2,13 @@ import json
 from datetime import datetime
 import os
 
-class Config:
+class AppConfig:
     # 单例模式
     _instance = None
 
     def __new__(cls):
         if cls._instance is None:
-            cls._instance = super(Config, cls).__new__(cls)
+            cls._instance = super(AppConfig, cls).__new__(cls)
             cls._instance.load_config()
         return cls._instance
 
@@ -37,5 +37,12 @@ class Config:
             os.makedirs(self.DATABASE_PATH_FLORDER)
         if not os.path.exists(self.EXPORT_PATH):
             os.makedirs(self.EXPORT_PATH)
+    
+    def write_config(self):
+        with open('./assets/config.json', 'w', encoding='utf-8') as file:
+            json.dump(self.__dict__, file, indent=4, ensure_ascii=False)
+
+    def reload_config(self):
+        self.load_config()
 
 
