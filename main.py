@@ -968,16 +968,7 @@ def main(page: ft.Page):
         width=180    
     )
 
-    # 右侧内容区
-    content_column = ft.Column(
-        controls=[
-            ft.Text("Hello World!"),
-        ],
-        # expand=True,
-        width=1000,
-        alignment=ft.MainAxisAlignment.CENTER,
-        horizontal_alignment=ft.CrossAxisAlignment.CENTER
-    )
+
 
     # 数据库内容区
     database_content_column = [
@@ -1731,7 +1722,17 @@ def main(page: ft.Page):
         horizontal_alignment=ft.CrossAxisAlignment.CENTER
     )
     
-
+    # 右侧内容区
+    content_column = ft.Column(
+        controls=[
+            home_image,
+            home_column
+        ],
+        # expand=True,
+        width=1000,
+        alignment=ft.MainAxisAlignment.CENTER,
+        horizontal_alignment=ft.CrossAxisAlignment.CENTER
+    )
     page.add(
         ft.Row(
             [
