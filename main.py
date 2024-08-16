@@ -71,7 +71,7 @@ def main(page: ft.Page):
         logger.setLevel(logging.DEBUG)
 
         # 创建一个handler，用于写入日志文件和控制台
-        fh = logging.FileHandler(f'{Config.LOG_PATH}{Config.TODAY}.log',encoding='utf-8')
+        fh = logging.FileHandler(f'{Config.LOG_PATH}/{Config.TODAY}.log',encoding='utf-8')
         fh.setLevel(logging.DEBUG)
         ch = logging.StreamHandler()
         ch.setLevel(logging.DEBUG)
@@ -672,7 +672,8 @@ def main(page: ft.Page):
         db = Database(Config.DATABASE_PATH)
         if not os.path.exists(Config.EXPORT_PATH):
             os.mkdir(Config.EXPORT_PATH)
-        db.export_to_excel(table_name,f"{Config.EXPORT_PATH}{file_name}.xlsx")
+        db.export_to_excel(table_name,f"{Config.EXPORT_PATH}/{file_name}.xlsx")
+        
 
         
 
@@ -876,9 +877,9 @@ def main(page: ft.Page):
         page.update()
 
     def on_settings_save(e):
-        Config.CACHE_PATH = f"./assets/{settings_cache_path.value}/"
-        Config.LOG_PATH = f"./assets/{settings_log_path.value}/"
-        Config.EXPORT_PATH = f"./assets/{settings_export_path.value}/"
+        Config.CACHE_PATH = f"{settings_cache_path.value}"
+        Config.LOG_PATH = f"{settings_log_path.value}"
+        Config.EXPORT_PATH = f"{settings_export_path.value}"
         http_proxy = f"{settings_http_proxy_prefix.value}{settings_http_proxy_ip.value}:{settings_http_proxy_port.value}"
         https_proxy = f"{settings_https_proxy_prefix.value}{settings_https_proxy_ip.value}:{settings_https_proxy_port.value}"
         Config.HTTP_PROXY = http_proxy
@@ -889,9 +890,10 @@ def main(page: ft.Page):
         Config.load_config()
     
     def on_settings_default(e):
-        Config.CACHE_PATH = "./assets/html/"
-        Config.LOG_PATH = "./assets/logs/"
-        Config.EXPORT_PATH = "./assets/export/"
+        username = os.environ.get('USERNAME') 
+        Config.CACHE_PATH = r"C:\Users\{}\AppData\Local\EmailExtractor\html".format(username)
+        Config.LOG_PATH = r"C:\Users\{}\AppData\Local\EmailExtractor\logs".format(username)
+        Config.EXPORT_PATH = r"C:\Users\{}\AppData\Local\EmailExtractor\export".format(username)
         http_proxy = "http://127.0.0.1:7890"
         https_proxy = "http://127.0.0.1:7890"
         Config.HTTP_PROXY = http_proxy
@@ -901,9 +903,9 @@ def main(page: ft.Page):
         Config.write_config()
         Config.load_config()
 
-        settings_cache_path.value = Config.CACHE_PATH.split("/")[-2]
-        settings_log_path.value = Config.LOG_PATH.split("/")[-2]
-        settings_export_path.value = Config.EXPORT_PATH.split("/")[-2]
+        settings_cache_path.value = r"C:\Users\{}\AppData\Local\EmailExtractor\html".format(username)
+        settings_log_path.value = r"C:\Users\{}\AppData\Local\EmailExtractor\logs".format(username)
+        settings_export_path.value = r"C:\Users\{}\AppData\Local\EmailExtractor\export".format(username)
         settings_http_proxy_ip.value = Config.HTTP_PROXY.split(":")[1].split("//")[1]
         settings_http_proxy_port.value = Config.HTTP_PROXY.split(":")[2]
         settings_https_proxy_ip.value = Config.HTTPS_PROXY.split(":")[1].split("//")[1]
@@ -1472,10 +1474,10 @@ def main(page: ft.Page):
     
     ################################################################################
     """ 设置 """
-    settings_cache_path = ft.TextField(label="HTML缓存目录",height=50, border="underline",value=Config.CACHE_PATH.split("/")[-2])
+    settings_cache_path = ft.TextField(label="HTML缓存目录",height=50, border="underline",value=Config.CACHE_PATH)
     # settings_db_path = ft.TextField(label="数据库名称",height=50, border="underline",prefix="./assest/db/",value=Config.DATABASE_PATH,suffix=".db")
-    settings_log_path = ft.TextField(label="日志文件目录", height=50,border="underline",value=Config.LOG_PATH.split("/")[-2])
-    settings_export_path = ft.TextField(label="导出文件目录", height=50,border="underline",value=Config.EXPORT_PATH.split("/")[-2])
+    settings_log_path = ft.TextField(label="日志文件目录", height=50,border="underline",value=Config.LOG_PATH)
+    settings_export_path = ft.TextField(label="导出文件目录", height=50,border="underline",value=Config.EXPORT_PATH)
 
     settings_path_card = ft.Card(
         content=ft.Container(

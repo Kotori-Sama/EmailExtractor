@@ -1,8 +1,8 @@
 {
-    "TODAY": "2024-08-15",
-    "CURRENT_TIME": "2024-08-15 23:00:05",
-    "CACHE_PATH": "./assets/html/",
-    "LOG_PATH": "./assets/logs/",
+    "TODAY": "2024-08-16",
+    "CURRENT_TIME": "2024-08-16 11:25:26",
+    "CACHE_PATH": "C:\\Users\\49662\\AppData\\Local\\EmailExtractor\\html",
+    "LOG_PATH": "C:\\Users\\49662\\AppData\\Local\\EmailExtractor\\logs",
     "HTTP_HEAD": "http://",
     "HTTPS_HEAD": "https://",
     "HTTP_PROXY": "http://127.0.0.1:7890",
@@ -223,5 +223,5 @@
         "html TEXT",
         "emails TEXT"
     ],
-    "EXPORT_PATH": "./assets/export/"
+    "EXPORT_PATH": "C:\\Users\\49662\\AppData\\Local\\EmailExtractor\\export"
 }

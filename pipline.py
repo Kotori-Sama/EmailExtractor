@@ -46,7 +46,7 @@ def _get_html(url : str):
         return None
     
     # 保存到html文件
-    with open(f'{Config.CACHE_PATH}{url}.html', 'w', encoding='utf-8') as f:
+    with open(f'{Config.CACHE_PATH}/{url}.html', 'w', encoding='utf-8') as f:
         f.write(html)
     # Logger.info(f" [{process.name}] 保存HTML数据成功，url: {url}，文件路径: {Config.CACHE_PATH}{url}.html")
     
