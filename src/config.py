@@ -10,6 +10,7 @@ class AppConfig:
         if cls._instance is None:
             cls._instance = super(AppConfig, cls).__new__(cls)
             cls._instance.load_config()
+            # cls._instance.init()
         return cls._instance
 
     def load_config(self):
@@ -29,14 +30,18 @@ class AppConfig:
         self.CURRENT_TIME = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         self.IMAGE_TYPE = tuple(self.IMAGE_TYPE)
 
-        if not os.path.exists(self.CACHE_PATH):
-            os.makedirs(self.CACHE_PATH)
-        if not os.path.exists(self.LOG_PATH):
-            os.makedirs(self.LOG_PATH)
-        if not os.path.exists(self.DATABASE_PATH_FLORDER):
-            os.makedirs(self.DATABASE_PATH_FLORDER)
-        if not os.path.exists(self.EXPORT_PATH):
-            os.makedirs(self.EXPORT_PATH)
+        try:
+            if not os.path.exists(self.CACHE_PATH):
+                os.makedirs(self.CACHE_PATH)
+            if not os.path.exists(self.LOG_PATH):
+                os.makedirs(self.LOG_PATH)
+            if not os.path.exists(self.DATABASE_PATH_FLORDER):
+                os.makedirs(self.DATABASE_PATH_FLORDER)
+            if not os.path.exists(self.EXPORT_PATH):
+                os.makedirs(self.EXPORT_PATH)
+        except Exception as e:
+            self.init()
+            self.load_config()
     
     def write_config(self):
         with open('./assets/config.json', 'w', encoding='utf-8') as file:
@@ -44,5 +49,13 @@ class AppConfig:
 
     def reload_config(self):
         self.load_config()
+    
+    def init(self):
+        print("Config initialized")
+        username = os.environ.get('USERNAME') 
+        self.CACHE_PATH = r"C:\Users\{}\AppData\Local\EmailExtractor\html".format(username)
+        self.LOG_PATH = r"C:\Users\{}\AppData\Local\EmailExtractor\logs".format(username)
+        self.EXPORT_PATH = r"C:\Users\{}\AppData\Local\EmailExtractor\export".format(username)
+        self.write_config()
 
 
