@@ -287,6 +287,19 @@ class Database:
         '''
         temp_table_name = self.init_from_excel(excel_file)
         Logger.info(f"从excel文件{excel_file}中添加数据到数据库{table_name}")
+        # 获取table_name中数据的数量
+        query = f"SELECT COUNT(*) FROM {table_name}"
+        self.cursor.execute(query)
+        table_name_num = self.cursor.fetchone()[0]
+        # 获取temp_table_name中数据的数量
+        query = f"SELECT COUNT(*) FROM {temp_table_name}"
+        self.cursor.execute(query)
+        temp_table_name_num = self.cursor.fetchone()[0]
+        if table_name_num + temp_table_name_num > 500:
+            Logger.info("超过试用限制")
+            self.delete_table(temp_table_name)
+            return
+
         self.merge_table(table_name, temp_table_name)
         self.delete_table(temp_table_name)
         
