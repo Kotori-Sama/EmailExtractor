@@ -1169,7 +1169,7 @@ def main(page: ft.Page):
                                     content=ft.Column(
                                         controls=[
                                             ft.ElevatedButton("选择文件",icon=ft.icons.FILE_UPLOAD_OUTLINED,on_click=on_file_import_dialog_file_filepicker),
-                                            ft.Text(value="支持导入csv、xlsx文件",color=ft.colors.GREY_400),
+                                            ft.Text(value="支持导入xlsx文件",color=ft.colors.GREY_400),
                                         ],
                                         alignment=ft.MainAxisAlignment.CENTER,
                                         horizontal_alignment=ft.CrossAxisAlignment.CENTER

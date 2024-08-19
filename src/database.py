@@ -224,6 +224,17 @@ class Database:
             df = excel_data.parse(sheet_name)
             data = df.values.tolist()
 
+            ####################################################
+            """ 试用条款：限制最大行数为500行 """
+
+            if len(data) > 500:
+                Logger.warning(f"表{table_name}中数据超过500行")
+                data = []
+
+            ####################################################
+
+
+
             for row in data:
 
                  # 修正数据格式
